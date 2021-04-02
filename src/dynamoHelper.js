@@ -1,6 +1,9 @@
 const timeout = ms => new Promise(res => setTimeout(res, ms))
+import AWS from 'aws-sdk'
 
-export default docClient => tableName => {
+export default ({ awsOptions, tableName, indexName }) => {
+    const docClient = new AWS.DynamoDB.DocumentClient(awsOptions)
+    
     async function scan({ limit, startKey, options = {} }) {
         let results = []
         let hasMore = true
@@ -8,6 +11,7 @@ export default docClient => tableName => {
         while (hasMore && results.length < limit || !limit) {
             let { Items = [], LastEvaluatedKey } = await docClient.scan({
                 TableName: tableName,
+                IndexName: indexName,
                 Limit: limit,
                 ExclusiveStartKey: startKey || undefined,
                 ...options,
@@ -24,16 +28,38 @@ export default docClient => tableName => {
         }
     }
 
-    async function query({ options = {} }) {
-        return await docClient.query({
-            TableName: tableName,
-            ...options,
-        }).promise()
+    async function query({ keyName, keyValue, limit, startKey, options = {} }) {
+        let results = []
+        let hasMore = true
+        while (hasMore && results.length < limit || !limit) {
+            let { Items = [], LastEvaluatedKey } = await docClient.query({
+                TableName: tableName,
+                IndexName: indexName,
+                KeyConditionExpression: '#hkey = :hkey',
+                ExpressionAttributeValues: {
+                    ':hkey': keyValue,
+                },
+                ExpressionAttributeNames: {
+                    '#hkey': keyName,
+                },
+                Limit: limit,
+                ExclusiveStartKey: startKey || undefined,
+                ...options,
+            }).promise()
+
+            results = results.concat(Items)
+            startKey = LastEvaluatedKey
+            hasMore = !!LastEvaluatedKey
+        }
+
+        return {
+            results,
+            hasMore,
+        }        
     }
 
     async function batchGet({ keys, options = {} }) {
         let results = []
-        let i = 0
         while (keys.length > 0) {
             let Keys = keys.splice(0, 100)
             let { Responses, UnprocessedKeys } = await docClient.batchGet({
@@ -55,6 +81,18 @@ export default docClient => tableName => {
         return results
     }
 
+    async function batchDelete({ keys }) {
+        while (keys.length > 0) {
+            let Keys = keys.splice(0, 25)
+            await docClient.batchWrite({
+                RequestItems: {
+                    [tableName]: Keys.map( Key => ({
+                        DeleteRequest: { Key }
+                    }))
+                },
+            }).promise()
+        }
+    }
     const getOne = ({ key, options = {} }) => {
         return docClient.get({
             TableName: tableName,
@@ -70,7 +108,6 @@ export default docClient => tableName => {
             Key: key,
             ...options,
         }).promise()
-            .then((Response) => Response)
     }
 
     const putItem = ({ attributes, options = {} }) => {
@@ -89,5 +126,6 @@ export default docClient => tableName => {
         getOne,
         putItem,
         deleteItem,
+        batchDelete,
     }
 }

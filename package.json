@@ -1,19 +1,22 @@
 {
-  "name": "aor-dynamodb-client",
+  "name": "ar-data-dynamodb",
   "version": "1.0.1",
-  "description": "An [admin-on-rest](https://github.com/marmelab/admin-on-rest) client for [DynamoDb](https://aws.amazon.com/dynamodb/).",
+  "description": "An [react-admin](https://marmelab.com/react-admin/DataProviders.html) data provider for [DynamoDb](https://aws.amazon.com/dynamodb/).",
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/abiglobalhealth/aor-dynamodb-client.git"
+    "url": "git+https://github.com/yonahforst/ar-data-dynamodb.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/abiglobalhealth/aor-dynamodb-client/issues"
+    "url": "https://github.com/ayonahforst/ar-data-dynamodb/issues"
   },
-  "homepage": "https://github.com/abiglobalhealth/aor-dynamodb-client#readme"
+  "homepage": "https://github.com/yonahforst/ar-data-dynamodb#readme",
+  "devDependencies": {
+    "aws-sdk": "^2.817.0"
+  }
 }
